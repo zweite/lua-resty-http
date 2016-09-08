@@ -67,7 +67,7 @@ end
 
 
 local _M = {
-    _VERSION = '0.08',
+    _VERSION = '0.09',
 }
 _M._USER_AGENT = "lua-resty-http/" .. _M._VERSION .. " (Lua) ngx_lua/" .. ngx.config.ngx_lua_version
 
@@ -188,15 +188,15 @@ end
 
 
 function _M.parse_uri(self, uri)
-    local m, err = ngx_re_match(uri, [[^(http[s]*)://([^:/]+)(?::(\d+))?(.*)]],
+    local m, err = ngx_re_match(uri, [[^(http[s]?)://([^:/]+)(?::(\d+))?(.*)]],
         "jo")
 
     if not m then
         if err then
-            return nil, "failed to match the uri: " .. err
+            return nil, "failed to match the uri: " .. uri .. ", " .. err
         end
 
-        return nil, "bad uri"
+        return nil, "bad uri: " .. uri
     else
         if m[3] then
             m[3] = tonumber(m[3])
@@ -500,14 +500,14 @@ end
 local function _handle_continue(sock, body)
     local status, version, reason, err = _receive_status(sock)
     if not status then
-        return nil, err
+        return nil, nil, err
     end
 
     -- Only send body if we receive a 100 Continue
     if status == 100 then
         local ok, err = sock:receive("*l") -- Read carriage return
         if not ok then
-            return nil, err
+            return nil, nil, err
         end
         _send_body(sock, body)
     end
